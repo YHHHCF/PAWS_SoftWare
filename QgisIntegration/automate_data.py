@@ -1,6 +1,7 @@
 import sys
 import warnings
 import gdal
+import pickle
 # import pandas as pd
 
 import processing
@@ -844,16 +845,10 @@ def add_is_field(layer, name, val):
 # Module 4 - Our actual preprocessing code
 #
 
-def main_procedure(input_path, output_path_shapefiles, output_path_excel):
+def main_procedure(input_path, output_path_shapefiles, output_path_excel, layers_serialize_file):
 
-    # extra_env_path = ['C:\\PROGRA~2\\QGIS2~1.18\\apps\\qgis-ltr\\python\\plugins', 
-    # 'C:\\PROGRA~2\\QGIS2~1.18\\apps\\qgis-ltr\\plugins', 
-    # 'C:\\PROGRA~2\\QGIS2~1.18\\apps\\qgis-ltr\\python']
-    # for extra_path in extra_env_path:
-    #     sys.path.append(extra_path)
-    # QgsApplication.setPrefixPath('C:/PROGRA~2/QGIS2~1.18/apps/qgis-ltr', True)
 
-    # Suppress Warnning in Standalone Environment:
+    # Suppress Warnning in Standalone Environment Begin
 
     # # create a reference to the QgsApplication, setting the
     # # second argument to False disables the GUI
@@ -888,19 +883,54 @@ def main_procedure(input_path, output_path_shapefiles, output_path_excel):
 
     #specify the name of the boundary file, you do not need to specify the path to this file as
     #long as all input shapefiles are in the same path described by input_path
-    boundary_file = "toy_boundary.shp"
+    
+    boundary_file = None
+    dist_layers = None
+    int_layers = None
+    raster_layers = None
 
-    #import paths
+    # load layers and boundary file
+    with open(layers_serialize_file, 'r') as f:
+        lst = f.readlines()
+        for line in lst:
+            field_type, content = line.split(':')[0].strip(), line.split(':')[1].strip()
+            if field_type == 'boundary_file':
+                boundaries = []
+                for name in content.split(','):
+                    boundaries.append(name.strip())
+                assert len(boundaries) == 1, "multiple boundary file detected"
+                boundary_file = boundaries[0]
 
+            elif field_type == 'dist_layers':
+                dist_layers = []
+                for name in content.split(','):
+                    dist_layers.append(name.strip())
+            elif field_type == 'int_layers':
+                int_layers = []
+                for name in content.split(','):
+                    int_layers.append(name.strip())
+            elif field_type == 'raster_layers':
+                raster_layers = []
+                for name in content.split(','):
+                    raster_layers.append(name.strip())
+            else:
+                raise Exception(field_type + ' NOT SUPPORTED')
 
-    #specify layers we want to find distances from 
-    dist_layers = ['toy_patrol.shp','toy_poaching.shp','toy_road.shp','toy_river.shp']
+    if boundary_file is None:
+        raise Exception("automate_data.py: boundary file not found")
+        # boundary_file = "toy_boundary.shp"
 
-    #specify layers we want to find intersections with
-    int_layers = ['toy_patrol.shp','toy_poaching.shp','toy_road.shp']
+    if dist_layers is None:
+        raise Exception("automate_data.py: dist layers not found")
+        # dist_layers = ['toy_patrol.shp','toy_poaching.shp','toy_road.shp','toy_river.shp']
 
-    #specify raster files
-    raster_layers = ['toy_altitude.tif']
+    if int_layers is None:
+        raise Exception("automate_data.py: int layers not found")
+        # int_layers = ['toy_patrol.shp','toy_poaching.shp','toy_road.shp']
+
+    if raster_layers is None:
+        raise Exception("automate_data.py: rast layers not found")
+        # raster_layers = ['toy_altitude.tif']
 
     ####################################################################################################################################################
     #
@@ -1340,6 +1370,6 @@ def main_procedure(input_path, output_path_shapefiles, output_path_excel):
 
 
 if __name__ == "__main__":
-    assert len(sys.argv) == 4
-    main_procedure(sys.argv[1], sys.argv[2], sys.argv[3])
+    assert len(sys.argv) == 5
+    main_procedure(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
 
