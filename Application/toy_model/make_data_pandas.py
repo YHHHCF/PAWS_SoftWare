@@ -124,6 +124,7 @@ def main_poaching_predict(
     df_invaliddata,
     df_invaliddata2,
     method='xgb',
+    ratio=100,
 ):
 
   PositiveDataID = df_allpositive["DN"].values
@@ -141,7 +142,7 @@ def main_poaching_predict(
   NEWALLDATA = np.array(NEWALLDATA)
 
   if method == 'xgb':
-    train_data, train_label = dataset.get_train_all_up(100)
+    train_data, train_label = dataset.get_train_all_up(ratio)
 
     param = {
         'max_depth': 10,
@@ -158,7 +159,7 @@ def main_poaching_predict(
     ALL_value = bst.predict(D_ALLDATA)
 
   elif method == 'dt':
-    train_data, train_label = dataset.get_train_all_up(100)
+    train_data, train_label = dataset.get_train_all_up(ratio)
 
     clf = BaggingClassifier(tree.DecisionTreeClassifier(
         criterion="entropy"), n_estimators=1000, max_samples=0.1)
@@ -167,7 +168,7 @@ def main_poaching_predict(
     ALL_value = ALL_value[:, 1]
 
   elif method == 'svm':
-    train_data, train_label = dataset.get_train_all_up(25)
+    train_data, train_label = dataset.get_train_all_up(ratio)
     clf = SVR()
     clf.fit(train_data, train_label)
     ALL_value = clf.predict(ALLDATA)
