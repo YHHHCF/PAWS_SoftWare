@@ -21,7 +21,9 @@ class QgisStandalone(object):
 		self.qgis_bash_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'env_test.bat')
 		self.qgis_automate_data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'automate_data.py')
 
-		self.qgis_input_layers = args['qgis_input_layers'] # optional. dictionary specify which layer to process
+		self.qgis_input_layers = None 
+		if 'qgis_input_layers' in args: # optional. dictionary specify which layer to process
+ 			self.qgis_input_layers = args['qgis_input_layers']
 
 		self.serialize_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'layer_file_name.txt')
 		self.default_layer_name = ['boundary_file', 'dist_layers', 'int_layers', 'raster_layers']
@@ -43,17 +45,13 @@ class QgisStandalone(object):
 		FNULL = open(os.devnull, 'w')
 		retcode = subprocess.call(qgis_bash_script, stderr=FNULL)
 		print('Subprocess finished with exit code ' + str(retcode))
+		os.remove(self.qgis_bash_path)
+		os.remove(self.serialize_file)
 		if retcode:
 			if retcode == 3221225477:
 				pass # qgis warnings in standalone evironment, ignored
 			else:
-				raise Exception('Subprocess Internal Error')
-		# session = subprocess.Popen(qgis_bash_script, stdout=subprocess.PIPE, shell=True)
-		# output, error = session.communicate()
-		# print('*' * 10 + 'output:' + '*' * 10)
-		# print(output)
-		# print('*' * 10 + 'error:' + '*' * 10)
-		# print(error)
+				raise Exception('Qgis Internal Error')
 
 	def list_files(self, path):
 		if not os.path.exists(path):
@@ -139,6 +137,8 @@ class QgisStandalone(object):
 			if not layer_files:
 				if key == 'boundary_file':
 					raise Exception('make sure ' + self.qgis_boundary_file + ' is in ' + self.qgis_input_shp_path)
+				if key == 'raster_layers':
+					continue
 				raise Exception('missing layer type: ' + key)
 
 			for layer_file in layer_files:
