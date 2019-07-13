@@ -1,53 +1,31 @@
 import make_data_pandas
+
 from mydataset import DataSet
-import os
+from os import listdir, makedirs
+from os.path import isfile, join, exists, splitext
 
 
-def main_predict(basepath, method='xgb',
-                 column_names=None, files=None, selected_features=None, patrol=None, poaching=None):
-  ##########################################################################
-  ##########################################################################
-  ##########################################################################
-  ##########################################################################
-  check_file = [
-      'X', 'Y', 'is-toy_patrol', 'is-toy_poaching', 'is-toy_road',
-      'dist-toy_patrol', 'dist-toy_poaching', 'dist-toy_road',
-      'toy_altitude', 'is-toy_patrol', 'is-toy_poaching']
+def get_csv_files_in_dir(base_path):
+  '''get csv files in dir'''
+  files = [f for f in listdir(base_path)
+           if isfile(join(base_path, f)) and '.csv' == splitext(f)[-1]]
+  return files
 
-  for i in check_file:
-    if i+'.csv' not in os.listdir(basepath):
-      return (False,i)
-  
-  column_names = [
-      'X',
-      'Y',
-      'is-toy_patrol',
-      'is-toy_poaching',
-      'is-toy_road',
-      'dist-toy_patrol',
-      'dist-toy_poaching',
-      'dist-toy_road',
-      'toy_altitude',
-  ]
+
+def main_get_final_data(basepath, input_files):
+  # remove ".csv"
+  column_names = [f[:-4] for f in input_files]
+
   files = []
-  for name in column_names:
-    files.append(f"{basepath}/{name}.csv")
-  selected_features = [
-      "is-toy_road",
-      "normal-dist-toy_road",
-      "normal-toy_altitude",
-  ]
-  patrol = 'is-toy_patrol'
-  poaching = 'is-toy_poaching'
-  ##########################################################################
-  ##########################################################################
-  ##########################################################################
-  ##########################################################################
+  for name in input_files:
+    files.append(join(basepath, name))
+
   # final_data: originally: final.csv
-  final_data = make_data_pandas.process_automate_data(files, column_names)
+  return make_data_pandas.process_automate_data(files, column_names)
 
-  ##########################################################################
 
+def main_predict(final_data, selected_features, patrol, poaching,
+                 method='xgb'):
   df_alldata, df_invaliddata, df_unknowndata, df_allpositive, \
       df_allnegative, df_slct_positive, df_slct_negative, \
       df_slct_unlabeled, \
@@ -82,16 +60,15 @@ def main_predict(basepath, method='xgb',
       df_invaliddata2,
       method,
   )
-  return (qgis_file_in1_str, df_alldata)
+  return df_alldata, qgis_file_in1_str
 
 
-def main_prep_qgis(output,
+def main_prep_qgis(qgis_file_in1_str, df_alldata,
                    qgis_file_out1="predictions_heatmap1.asc"):
   # qgis_file_out1: raster file of probabilistic predictions
 
   # represents the coordinates of the left bottom corner for
   # conservation site 1 (longitude and latitude if working with WGS84)
-  qgis_file_in1_str, df_alldata = output
   xcorner1 = 127.76402335
   ycorner1 = 43.5257568717
 
@@ -100,18 +77,65 @@ def main_prep_qgis(output,
   gridDim1 = 0.01
   make_data_pandas.prep_qgis(qgis_file_in1_str, qgis_file_out1, gridDim1,
                              xcorner1, ycorner1, df_alldata)
-  return
 
 
+def extract_features(basepath):
+  # Step-1, user tells us basepath, and then we get all the csv files
+  # Must include all the input files from automate_data.py
+  input_files = get_csv_files_in_dir(basepath)
+  input_files.sort()
+
+  # final_data: originally: final.csv
+  # feature_names: a list of feature names
+  final_data, feature_names = main_get_final_data(basepath, input_files)
+
+  # Step-2, user tells us what features are prefered among selected_features
+  # specify which features to use from final.csv feature spreadsheet
+  selected_features = [f for f in feature_names
+                       if (f not in ['normal-X', 'normal-Y'])
+                       and (f.startswith('normal-') or f.startswith('is-'))]
+  return final_data, feature_names, selected_features
+
+
+def main_real():
+  basepath = '/Users/jiaqiliu/workspace/cmu/PAWS-workspace/Quick_Employment/QuickEmployment_Toy/csv_output_real'
+
+  # specify which features to use from final.csv feature spreadsheet
+  final_data, _, selected_features = extract_features(basepath)
+  print(selected_features)
+
+  # specify which feature symbolizes where patrolling occurs
+  patrol = 'is-2015_patrol_abs'
+  # specify which feature symbolizes where poaching occurs
+  poaching = 'is-2015_poach_abs'
+
+  # Step-3 run algorithm
+  df_alldata, qgis_file_in1_str = main_predict(
+      final_data, selected_features, patrol, poaching, method='xgb')
+
+  # Step-4 save heatmap file
+  main_prep_qgis(qgis_file_in1_str, df_alldata, 'pred_real.asc')
 
 
 def main_toy():
-  basepath = '/Users/hukai/Downloads/PAWS_SoftWare-master/Data/csv_output/'
-  method = 'dt' #'xgb', 'svm', 'dt'
-  save = 'pred_toy.asc'
-  output = main_predict(basepath, method)
-  main_prep_qgis(output, save)
-  print('done')
+  basepath = '/Users/jiaqiliu/workspace/cmu/PAWS-workspace/Quick_Employment/QuickEmployment_Toy/csv_output'
+
+  # specify which features to use from final.csv feature spreadsheet
+  final_data, _, selected_features = extract_features(basepath)
+  print(selected_features)
+
+  # specify which feature symbolizes where patrolling occurs
+  patrol = 'is-toy_patrol'
+  # specify which feature symbolizes where poaching occurs
+  poaching = 'is-toy_poaching'
+
+  # Step-3 run algorithm
+  df_alldata, qgis_file_in1_str = main_predict(
+      final_data, selected_features, patrol, poaching, method='xgb')
+
+  # Step-4 save heatmap file
+  main_prep_qgis(qgis_file_in1_str, df_alldata, 'pred_toy.asc')
 
 if __name__ == '__main__':
+  main_real()
   main_toy()
