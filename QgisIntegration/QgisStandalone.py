@@ -7,45 +7,39 @@ class QgisStandalone(object):
 	The path format is provided as follows, you should initialize this object by providing your own path.
 	Note that QgisStandalone.py and automate_data.py should be in the same folder, bash file is also generated in module folder
 	"""
-	def __init__(self, qgis_install_path,
-				 qgis_input_shp_path,
-				 qgis_output_shapefile_path,
-				 qgis_output_csv_path,
-				 qgis_boundary_file,
-				 qgis_input_layers = None  # optional. dictionary specify which layer to process
-				 ): 
-
-
+	def __init__(self, **args):
 		super(QgisStandalone, self).__init__()
 
-		self.qgis_install_path = qgis_install_path
+		self.qgis_install_path = args['qgis_install_path']
 		self.qgis_sub_install_path = os.path.join(self.qgis_install_path, 'apps', 'qgis-ltr')
 		self.qgis_env_bat_path = os.path.join(self.qgis_install_path, 'bin', 'o4w_env.bat')
 
-		self.qgis_input_shp_path = qgis_input_shp_path.replace("\\", "/")
-		self.qgis_output_shapefile_path = qgis_output_shapefile_path.replace("\\", "/")
-		self.qgis_output_csv_path = qgis_output_csv_path.replace("\\", "/")
+		self.qgis_input_shp_path = args['qgis_input_shp_path'].replace("\\", "/")
+		self.qgis_output_shapefile_path = args['qgis_output_shapefile_path'].replace("\\", "/")
+		self.qgis_output_csv_path = args['qgis_output_csv_path'].replace("\\", "/")
 
 		self.qgis_bash_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'env_test.bat')
 		self.qgis_automate_data_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'automate_data.py')
 
-		self.qgis_input_layers = qgis_input_layers
+		self.qgis_input_layers = args['qgis_input_layers'] # optional. dictionary specify which layer to process
+
 		self.serialize_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'layer_file_name.txt')
 		self.default_layer_name = ['boundary_file', 'dist_layers', 'int_layers', 'raster_layers']
-		self.qgis_boundary_file = qgis_boundary_file
+		self.qgis_boundary_file = args['qgis_boundary_file']
 
-		if qgis_input_layers is None:
+		if self.qgis_input_layers is None:
 			self.qgis_input_layers = self.default_select()
 
 		self.layer_name = list(self.qgis_input_layers.keys())
 
 
 	def run(self):
-		self.make_dir()
-		qgis_bash_script = self.generate_bash_script()
+		self.make_dir(self.qgis_output_csv_path, self.qgis_output_shapefile_path)
+		qgis_bash_script = self.generate_bash_script(self.qgis_bash_path)
 		self.serialize_layer_name()
-		self.clear_output_path()
 		self.check_path()
+		self.clear_output_path(self.qgis_output_shapefile_path, self.qgis_output_csv_path)
+
 		FNULL = open(os.devnull, 'w')
 		retcode = subprocess.call(qgis_bash_script, stderr=FNULL)
 		print('Subprocess finished with exit code ' + str(retcode))
@@ -61,16 +55,16 @@ class QgisStandalone(object):
 		# print('*' * 10 + 'error:' + '*' * 10)
 		# print(error)
 
-	def list_input_files(self):
-		if not os.path.exists(self.qgis_input_shp_path):
-			raise Exception('Qgis .shp input path: "' + self.qgis_input_shp_path + '" not found')
-		return os.listdir(self.qgis_input_shp_path)
+	def list_files(self, path):
+		if not os.path.exists(path):
+			raise Exception('Qgis .shp input path: "' + path + '" not found')
+		return os.listdir(path)
 
 	def default_select(self):
 		layer_name = dict()
 		for field_name in self.default_layer_name:
 			layer_name[field_name] = list()
-		input_files = self.list_input_files()
+		input_files = self.list_files(self.qgis_input_shp_path)
 		for file in input_files:
 			if os.path.splitext(file)[1] == '.shp':
 				if file == self.qgis_boundary_file:
@@ -84,23 +78,15 @@ class QgisStandalone(object):
 				continue
 		return layer_name
 
-	def clear_output_path(self):
-		files = os.listdir(self.qgis_output_shapefile_path)
-		for file in files:
-			absolute_path = os.path.join(self.qgis_output_shapefile_path, file)
-			os.remove(absolute_path)
-
-		files = os.listdir(self.qgis_output_csv_path)
-		for file in files:
-			absolute_path = os.path.join(self.qgis_output_csv_path, file)
-			os.remove(absolute_path)
-
-		files = os.listdir(self.qgis_output_shapefile_path)
-		if files:
-			raise Exception('can\'t remove file')
-		files = os.listdir(self.qgis_output_csv_path)
-		if files:
-			raise Exception('can\'t remove file')
+	def clear_output_path(self, *paths):
+		for path in paths:
+			files = os.listdir(path)
+			for file in files:
+				absolute_path = os.path.join(path, file)
+				os.remove(absolute_path)
+			files = os.listdir(path)
+			if files:
+				raise Exception('can\'t remove file')
 
 	def serialize_layer_name(self):
 		with open(self.serialize_file, 'w') as f:
@@ -116,11 +102,10 @@ class QgisStandalone(object):
 					continue
 				f.write('\n')
 
-	def make_dir(self):
-		if not os.path.exists(self.qgis_output_shapefile_path):
-			os.mkdir(self.qgis_output_shapefile_path)
-		if not os.path.exists(self.qgis_output_csv_path):
-			os.mkdir(self.qgis_output_csv_path)
+	def make_dir(self, *args):
+		for path in args:
+			if not os.path.exists(path):
+				os.mkdir(path)
 
 	def check_path(self):
 
@@ -162,7 +147,7 @@ class QgisStandalone(object):
 					raise Exception(absolute_path + ' not found')
 
 
-	def generate_bash_script(self):
+	def generate_bash_script(self, path):
 		"""
 		write QGIS bash script:
 		1. setup qgis standalone envrionment
@@ -184,11 +169,11 @@ class QgisStandalone(object):
 		# buffer.append("echo %PATH%\r\n")
 		buffer.append('python "%s" "%s/" "%s/" "%s/" "%s"\n' % (self.qgis_automate_data_path, self.qgis_input_shp_path, self.qgis_output_shapefile_path, self.qgis_output_csv_path, self.serialize_file))
 
-		with open(self.qgis_bash_path, "w") as f:
-			print("Saving bash script to " + self.qgis_bash_path)
+		with open(path, "w") as f:
+			print("Saving bash script to " + path)
 			f.write(''.join(buffer))
 
-		return self.qgis_bash_path
+		return path
 
 if __name__ == "__main__":
 	qgis_standalone = QgisStandalone()
