@@ -1,18 +1,21 @@
-from QgisIntegration.QgisStandalone import QgisStandalone
+from QgisStandalone import QgisStandalone
 
 
-input_layers = {
-	'boundary_file': ['toy_boundary.shp'],
-	'dist_layers': ['toy_patrol.shp', 'toy_poaching.shp', 'toy_road.shp', 'toy_river.shp'],
-	'int_layers': ['toy_patrol.shp', 'toy_poaching.shp', 'toy_road.shp'],
-	'raster_layers': ['toy_altitude.tif']
-}
-
-
-qgis = QgisStandalone(qgis_input_layers=input_layers,
-				 qgis_install_path="C:\\Users\\MaxWillx\\CMU course\\Paws Project\\QGIS 2.18",
-				 qgis_input_shp_path="C:\\Users\\MaxWillx\\CMU course\\Paws Project\\PAWS_SoftWare\\QgisIntegration\\auto_input",
-				 qgis_output_shapefile_path="C:\\Users\\MaxWillx\\CMU course\\Paws Project\\PAWS_SoftWare\\QgisIntegration\\shapefiles123",
-				 qgis_output_csv_path="C:\\Users\\MaxWillx\\CMU course\\Paws Project\\PAWS_SoftWare\\QgisIntegration\\csvfiles123"
+qgis = QgisStandalone(qgis_boundary_file='boundary_wgs84.shp',
+				 qgis_install_path='C:\\Users\\MaxWillx\\CMU course\\Paws Project\\QGIS 2.18',
+				 qgis_input_shp_path='C:\\Users\\MaxWillx\\CMU course\\Paws Project\\PAWS_SoftWare\\Data\\all_shp_inconsistent\\wgs84',
+				 # qgis_input_shp_path='C:\Users\MaxWillx\CMU course\Paws Project\PAWS_SoftWare\QgisIntegration\auto_input'
+				 qgis_output_shapefile_path='C:\\Users\\MaxWillx\\CMU course\\Paws Project\\PAWS_SoftWare\\QgisIntegration\\shapefiles123',
+				 qgis_output_csv_path='C:\\Users\\MaxWillx\\CMU course\\Paws Project\\PAWS_SoftWare\\QgisIntegration\\csvfiles123'
 				 )
 qgis.run()
+
+
+
+
+# input_layers = {
+# 	'boundary_file': ['toy_boundary.shp'],
+# 	'dist_layers': ['toy_patrol.shp', 'toy_poaching.shp', 'toy_road.shp', 'toy_river.shp'],
+# 	'int_layers': ['toy_patrol.shp', 'toy_poaching.shp', 'toy_road.shp'],
+# 	'raster_layers': ['toy_altitude.tif']
+# }

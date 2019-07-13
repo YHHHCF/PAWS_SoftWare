@@ -9,9 +9,10 @@ class QgisStandalone(object):
 	"""
 	def __init__(self, qgis_install_path,
 				 qgis_input_shp_path,
-				 qgis_input_layers, # dictionary, specify which layer to process
 				 qgis_output_shapefile_path,
 				 qgis_output_csv_path,
+				 qgis_boundary_file,
+				 qgis_input_layers = None  # optional. dictionary specify which layer to process
 				 ): 
 
 
@@ -30,22 +31,78 @@ class QgisStandalone(object):
 
 		self.qgis_input_layers = qgis_input_layers
 		self.serialize_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'layer_file_name.txt')
+		self.default_layer_name = ['boundary_file', 'dist_layers', 'int_layers', 'raster_layers']
+		self.qgis_boundary_file = qgis_boundary_file
 
-		self.layer_name = list(qgis_input_layers.keys())
+		if qgis_input_layers is None:
+			self.qgis_input_layers = self.default_select()
+
+		self.layer_name = list(self.qgis_input_layers.keys())
+
 
 	def run(self):
 		self.make_dir()
 		qgis_bash_script = self.generate_bash_script()
-		self.serialize_layer()
+		self.serialize_layer_name()
+		self.clear_output_path()
 		self.check_path()
-		session = subprocess.Popen(qgis_bash_script, stdout=subprocess.PIPE, shell=True)
-		output, error = session.communicate()
-		print('*' * 10 + 'output:' + '*' * 10)
-		print(output)
-		print('*' * 10 + 'error:' + '*' * 10)
-		print(error)
+		FNULL = open(os.devnull, 'w')
+		retcode = subprocess.call(qgis_bash_script, stderr=FNULL)
+		print('Subprocess finished with exit code ' + str(retcode))
+		if retcode:
+			if retcode == 3221225477:
+				pass # qgis warnings in standalone evironment, ignored
+			else:
+				raise Exception('Subprocess Internal Error')
+		# session = subprocess.Popen(qgis_bash_script, stdout=subprocess.PIPE, shell=True)
+		# output, error = session.communicate()
+		# print('*' * 10 + 'output:' + '*' * 10)
+		# print(output)
+		# print('*' * 10 + 'error:' + '*' * 10)
+		# print(error)
 
-	def serialize_layer(self):
+	def list_input_files(self):
+		if not os.path.exists(self.qgis_input_shp_path):
+			raise Exception('Qgis .shp input path: "' + self.qgis_input_shp_path + '" not found')
+		return os.listdir(self.qgis_input_shp_path)
+
+	def default_select(self):
+		layer_name = dict()
+		for field_name in self.default_layer_name:
+			layer_name[field_name] = list()
+		input_files = self.list_input_files()
+		for file in input_files:
+			if os.path.splitext(file)[1] == '.shp':
+				if file == self.qgis_boundary_file:
+					layer_name['boundary_file'].append(file)
+					continue
+				layer_name['dist_layers'].append(file)
+				layer_name['int_layers'].append(file)
+			elif os.path.splitext(file)[1] == '.tif':
+				layer_name['raster_layers'].append(file)
+			else:
+				continue
+		return layer_name
+
+	def clear_output_path(self):
+		files = os.listdir(self.qgis_output_shapefile_path)
+		for file in files:
+			absolute_path = os.path.join(self.qgis_output_shapefile_path, file)
+			os.remove(absolute_path)
+
+		files = os.listdir(self.qgis_output_csv_path)
+		for file in files:
+			absolute_path = os.path.join(self.qgis_output_csv_path, file)
+			os.remove(absolute_path)
+
+		files = os.listdir(self.qgis_output_shapefile_path)
+		if files:
+			raise Exception('can\'t remove file')
+		files = os.listdir(self.qgis_output_csv_path)
+		if files:
+			raise Exception('can\'t remove file')
+
+	def serialize_layer_name(self):
 		with open(self.serialize_file, 'w') as f:
 			for layer in self.layer_name:
 				f.write(layer + ': ')
@@ -91,8 +148,14 @@ class QgisStandalone(object):
 		if not os.path.isfile(self.qgis_bash_path):
 			raise Exception('Qgis bash script file: "' + self.qgis_bash_path + '" not found')
 
+
 		for key in self.layer_name:
 			layer_files = self.qgis_input_layers[key]
+			if not layer_files:
+				if key == 'boundary_file':
+					raise Exception('make sure ' + self.qgis_boundary_file + ' is in ' + self.qgis_input_shp_path)
+				raise Exception('missing layer type: ' + key)
+
 			for layer_file in layer_files:
 				absolute_path = os.path.join(self.qgis_input_shp_path.replace('/', '\\'), layer_file)
 				if not os.path.isfile(absolute_path):
