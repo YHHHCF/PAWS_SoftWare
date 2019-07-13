@@ -25,7 +25,7 @@ def main_get_final_data(basepath, input_files):
 
 
 def main_predict(final_data, selected_features, patrol, poaching,
-                 method='xgb'):
+                 method='xgb', ratio=100,):
   df_alldata, df_invaliddata, df_unknowndata, df_allpositive, \
       df_allnegative, df_slct_positive, df_slct_negative, \
       df_slct_unlabeled, \
@@ -59,6 +59,7 @@ def main_predict(final_data, selected_features, patrol, poaching,
       df_invaliddata,
       df_invaliddata2,
       method,
+      ratio,
   )
   return df_alldata, qgis_file_in1_str
 
@@ -105,9 +106,9 @@ def main_real():
   print(selected_features)
 
   # specify which feature symbolizes where patrolling occurs
-  patrol = 'is-2015_patrol_abs'
+  patrol = 'is-2017-patrol-abs'
   # specify which feature symbolizes where poaching occurs
-  poaching = 'is-2015_poach_abs'
+  poaching = 'is-2017-poach-abs'
 
   # Step-3 run algorithm
   df_alldata, qgis_file_in1_str = main_predict(
