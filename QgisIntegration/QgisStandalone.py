@@ -1,5 +1,5 @@
 import subprocess
-import os
+import os, shutil
 
 class QgisStandalone(object):
 	"""
@@ -37,7 +37,7 @@ class QgisStandalone(object):
 
 	def run(self):
 		self.make_dir(self.qgis_output_csv_path, self.qgis_output_shapefile_path)
-		qgis_bash_script = self.generate_bash_script(self.qgis_bash_path)
+		qgis_bash_script = self.serialize_bash_script(self.qgis_bash_path)
 		self.serialize_layer_name()
 		self.check_path()
 		self.clear_output_path(self.qgis_output_shapefile_path, self.qgis_output_csv_path)
@@ -80,8 +80,14 @@ class QgisStandalone(object):
 		for path in paths:
 			files = os.listdir(path)
 			for file in files:
-				absolute_path = os.path.join(path, file)
-				os.remove(absolute_path)
+				try:
+					absolute_path = os.path.join(path, file)
+					if os.path.isfile(absolute_path):
+						os.remove(absolute_path)
+					elif os.path.isdir(absolute_path):
+						shutil.rmtree(absolute_path)
+				except Exception as e:
+					print(e)
 			files = os.listdir(path)
 			if files:
 				raise Exception('can\'t remove file')
@@ -147,7 +153,7 @@ class QgisStandalone(object):
 					raise Exception(absolute_path + ' not found')
 
 
-	def generate_bash_script(self, path):
+	def serialize_bash_script(self, path):
 		"""
 		write QGIS bash script:
 		1. setup qgis standalone envrionment
