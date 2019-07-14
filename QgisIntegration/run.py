@@ -1,7 +1,7 @@
 from QgisStandalone import QgisStandalone
 
 qgis = QgisStandalone(qgis_boundary_file='boundary_wgs84.shp',
-                      qgis_install_path='C:\\Users\\MaxWillx\\CMU course\\Paws Project\\QGIS 2.18',
+                      qgis_install_path='C:\\Program Files (x86)\\QGIS 2.18',
                       qgis_input_shp_path='C:\\Users\\MaxWillx\\CMU course\\Paws Project\\PAWS_SoftWare\\Data\\all_shp_inconsistent\\wgs84',
                       qgis_output_shapefile_path='C:\\Users\\MaxWillx\\Desktop\\shapefiles123',
                       qgis_output_csv_path='C:\\Users\\MaxWillx\\Desktop\\csvfiles123',

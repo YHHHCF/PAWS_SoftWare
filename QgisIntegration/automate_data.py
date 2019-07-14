@@ -889,7 +889,7 @@ def main_procedure(input_path, output_path_shapefiles, output_path_excel, layers
     int_layers = None
     raster_layers = None
 
-    # load layers and boundary file
+    # load layers and boundary file name
     with open(layers_serialize_file, 'r') as f:
         lst = f.readlines()
         for line in lst:
@@ -897,6 +897,8 @@ def main_procedure(input_path, output_path_shapefiles, output_path_excel, layers
             if field_type == 'boundary_file':
                 boundaries = []
                 for name in content.split(','):
+                    if name.strip() == '' or name.strip() == ' ':
+                        continue
                     boundaries.append(name.strip())
                 assert len(boundaries) == 1, "multiple boundary file detected"
                 boundary_file = boundaries[0]
@@ -904,27 +906,33 @@ def main_procedure(input_path, output_path_shapefiles, output_path_excel, layers
             elif field_type == 'dist_layers':
                 dist_layers = []
                 for name in content.split(','):
+                    if name.strip() == '' or name.strip() == ' ':
+                        continue
                     dist_layers.append(name.strip())
             elif field_type == 'int_layers':
                 int_layers = []
                 for name in content.split(','):
+                    if name.strip() == '' or name.strip() == ' ':
+                        continue
                     int_layers.append(name.strip())
             elif field_type == 'raster_layers':
                 raster_layers = []
                 for name in content.split(','):
+                    if name.strip() == '' or name.strip() == ' ':
+                        continue
                     raster_layers.append(name.strip())
             else:
                 raise Exception(field_type + ' NOT SUPPORTED')
 
-    if boundary_file is None:
+    if not boundary_file:
         raise Exception("automate_data.py: boundary file not found")
         # boundary_file = "toy_boundary.shp"
 
-    if dist_layers is None:
+    if not dist_layers:
         raise Exception("automate_data.py: dist layers not found")
         # dist_layers = ['toy_patrol.shp','toy_poaching.shp','toy_road.shp','toy_river.shp']
 
-    if int_layers is None:
+    if not int_layers:
         raise Exception("automate_data.py: int layers not found")
         # int_layers = ['toy_patrol.shp','toy_poaching.shp','toy_road.shp']
 
