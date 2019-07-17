@@ -43,7 +43,7 @@ class QgisStandalone(object):
 		self.clear_output_path(self.qgis_output_shapefile_path, self.qgis_output_csv_path)
 
 		FNULL = open(os.devnull, 'w')
-		retcode = subprocess.call(qgis_bash_script, stderr=FNULL)
+		retcode = subprocess.call(qgis_bash_script, stderr=FNULL, stdout=FNULL)
 		print('Subprocess finished with exit code ' + str(retcode))
 		os.remove(self.qgis_bash_path)
 		os.remove(self.serialize_file)
