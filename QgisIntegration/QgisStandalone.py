@@ -47,11 +47,6 @@ class QgisStandalone(object):
 		print('Subprocess finished with exit code ' + str(retcode))
 		os.remove(self.qgis_bash_path)
 		os.remove(self.serialize_file)
-		if retcode:
-			if retcode == 3221225477:
-				pass # qgis warnings in standalone evironment, ignored
-			else:
-				raise Exception('Qgis Internal Error')
 
 	def list_files(self, path):
 		if not os.path.exists(path):
